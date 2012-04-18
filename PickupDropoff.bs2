@@ -14,7 +14,7 @@ Main:
   GOSUB Drop_Off
   END
 
-Pick_Up:
+Pick_Up1234:
   FOR counter = 1 TO 19
     PULSOUT 14, 550
     PULSOUT 15, 850
