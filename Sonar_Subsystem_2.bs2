@@ -42,7 +42,6 @@ RawToCm         CON     2257                    ' 1 / 29.034 (with **)
 IsHigh          CON     1                       ' for PULSOUT
 IsLow           CON     0
 
-ARRAY_SIZE      CON     5
 HALF_CIRCLE     CON     55
 
 ' -----[ Variables ]-------------------------------------------------------
@@ -58,9 +57,9 @@ start           VAR     Bit
 minimum         VAR     Byte
 
 ' Arrays to control distance and rotation counts for objects
-OnOff           VAR     Bit(ARRAY_SIZE + 1)
-Objects         VAR     Byte(ARRAY_SIZE + 1)
-Distances       VAR     Byte(ARRAY_SIZE + 1)
+Start_Rotation  VAR     Byte
+Object          VAR     Byte
+Distance        VAR     Byte
 
 ' -----[ Program Code ]----------------------------------------------------
 Main:
@@ -68,36 +67,6 @@ Main:
     GOSUB Do_Sonar
     dir = ~dir
   LOOP
-
-  DEBUG ? i, CR
-  DEBUG ? HALF_CIRCLE - i, CR
-
-  FOR i = 0 TO (HALF_CIRCLE - i)
-    GOSUB Turn_Right
-    PAUSE 20
-  NEXT
-
-  FOR i = 0 TO ARRAY_SIZE
-    DEBUG ? Objects(i)
-    DEBUG ? Distances(i)
-  NEXT
-
-  FOR i = 0 TO Objects(0)
-    GOSUB Turn_Right
-    PAUSE 20
-  NEXT
-
-  FOR i = 0 TO Objects(1)
-    GOSUB Turn_Right
-    PAUSE 20
-  NEXT
-
-  DEBUG DEC (Distances(1) / 4)
-
-  FOR i = 0 TO (Distances(1) / 4) * 11
-    GOSUB Forward
-    PAUSE 20
-  NEXT
 
   END
 
@@ -120,57 +89,21 @@ Do_Sonar:
 
     IF(centimeters < 36) THEN
       IF(start = 0) THEN
-        start = ~start
-
+        start            = ~start
+        Start_Rotation   = i
+        Object           = 0
+        Distance         = centimeters
+      ELSE
+        Object           = Object + 1
       ENDIF
-    ENDIF
-
-
-
-
-
-
-
-  ' Make a full circle with the sonar tower
-  FOR i = 0 TO HALF_CIRCLE - 1 STEP 1
-    DEBUG DEC i, CR
-
-    ' Retrieve sonar distance, convert
-    ' it to centimeters, and rotate right
-    GOSUB Get_Sonar
-    GOSUB To_Centimeters
-
-    IF(dir) THEN
-      GOSUB Turn_Right
     ELSE
-      GOSUB Turn_Left
-    ENDIF
-
-    ' Too many objects? Gtfo.
-    IF(index > ARRAY_SIZE) THEN
-      EXIT
-    ENDIF
-
-    IF(centimeters < 36) THEN                ' 36cm = 14in
-      IF(start = 0) THEN                     ' We have an acceptable object, but haven't started yet
-        start = 1                            ' Start
-        index = index + 1                    ' Next index in the array
-        OnOff(index) = IsHigh                ' On
-        Distances(index) = centimeters       ' Set the distance
-      ELSE                                   ' We're continuing on the same object
-        Objects(index) = Objects(index) + 1  ' Increase rotation count
-      ENDIF
-    ELSEIF(centimeters > 36) THEN            ' No object
-      IF(start = 0) THEN                     ' We have no object, and haven't started
-        Objects(index) = Objects(index) + 1  ' Increase rotation count on the lack of object
-      ELSE                                   ' No object but we've had one
-        start = 0                            ' Stop
-        index = index + 1                    ' Next index in the array
-        OnOff(index) = IsLow                 ' Off
+      IF(start = 0) THEN
+        '
+      ELSEIF(start = 1) THEN
+        RETURN
       ENDIF
     ENDIF
   NEXT
-  RETURN
 
 ' -----[ Subroutines ]-----------------------------------------------------
 ' This subroutine triggers the PING))) sonar sensor and measures
